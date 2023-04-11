@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+
+  influxdb:
+    image: influxdb:2.0
+    container_name: client_influxdb
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    environment:
+      - INFLUXD_CONFIG_PATH=/etc/influxdb2/influxd.conf
+      - INFLUXDB_REPORTING_DISABLED=true
+
+  geth:
+    image: ethereum/client-go:stable
+    container_name: client_geth
+    command: --goerli --http --http.addr 0.0.0.0 --http.vhosts=* --http.api eth,net,web3,personal --syncmode light
+    ports:
+      - "8545:8545"
+      - "30303:30303"
+      - "30303:30303/udp"
+    volumes:
+      - geth-data:/root/.ethereum
+
+  app:
+    image: "${client_image_name}"
+    container_name: client_app
+    restart: always
+    depends_on:
+      - influxdb
+      - geth
+    ports:
+      - "${CLIENT_APP_ADDR_PORT:-0}:17000"
+      - "${CLIENT_APP_ADDR_PORT:-0}:17003"
+      - "${CLIENT_APP_ADDR_PORT_INT:-0}:17004"
+      - "${CLIENT_APP_GRPCGW_ADDR_PORT:-0}:17006"
+      - "${CLIENT_APP_METRICS_ADDR_PORT:-0}:17005"
+    environment:
+      CLIENT_ADDR_HOST: "${MONO_ADDR_HOST}"
+      CLIENT_ADDR_HOST_INT: "${MONO_ADDR_HOST_INT}"
+      CLIENT_APP_ADDR_HOST: "${MONO_APP_ADDR_HOST}"
+      CLIENT_APP_ADDR_HOST_INT: "${MONO_APP_ADDR_HOST_INT}"
+
+volumes:
+  influxdb-data:
+  influxdb-config:
+  geth-data:
