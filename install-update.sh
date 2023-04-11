@@ -1,10 +1,10 @@
 #!/bin/bash
 
 REPO_URL="https://github.com/BlockOp/client-bundle"
-LOCAL_DIR="/home/ubuntu/client"
+LOCAL_DIR="/home/ubuntu/client-bundle"
 SCRIPT_NAME="install-update.sh"
 CRON_LOG="/home/ubuntu/update-client.log"
-CRON_JOB="0 * * * * $LOCAL_DIR/$SCRIPT_NAME > $CRON_LOG 2>&1"
+CRON_JOB="0 */12 * * * $LOCAL_DIR/$SCRIPT_NAME > $CRON_LOG 2>&1"
 
 # Clone or update the repository
 if [ ! -d "$LOCAL_DIR" ]; then
@@ -16,7 +16,8 @@ else
   # Check if there's an update to the script itself
   if [ -n "$(git diff HEAD..origin/main --name-only | grep $SCRIPT_NAME)" ]; then
     git pull
-    echo "The script has been updated. Please run it again to continue."
+    echo "The script has been updated. Running the updated script now..."
+    exec "$LOCAL_DIR/$SCRIPT_NAME"
     exit 0
   fi
 
@@ -32,4 +33,5 @@ if ! (crontab -l | grep -q "$SCRIPT_NAME"); then
 fi
 
 # Start or update the application
+source "$LOCAL_DIR/env.sh"
 docker-compose up -d
